@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Disaster Management</string>
+    <string name="sign_out">Sign out</string>
+    <string name="homepage">homepage</string>
+    <string name="id">ID:</string>
+    <string name="email">Email:</string>
+    <string name="user_name">User Name:</string>
+    <string name="Earthquake">Earthquake</string>
+    <string name="Tsunami">Tsunami</string>
+    <string name="Lightning">Lightning</string>
+    <string name="Floods">Floods</string>
+    <string name="volcanic_erruption">Volcanic Erruption</string>
+    <string name="youtube_tutorial">Youtube Tutorial</string>
+    <string name="play_video">Play Video</string>
+</resources>
