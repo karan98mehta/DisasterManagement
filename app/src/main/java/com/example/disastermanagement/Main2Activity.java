@@ -20,6 +20,7 @@ public class Main2Activity extends AppCompatActivity {
     TextView email;
     Button sign_out;
     Button youtubetutorial;
+    Button location;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +31,7 @@ public class Main2Activity extends AppCompatActivity {
         name = findViewById(R.id.textView);
         email = findViewById(R.id.textView2);
         youtubetutorial = findViewById(R.id.yt_button);
+        location = findViewById(R.id.lo_button);
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build();
 
 
@@ -54,6 +56,12 @@ public class Main2Activity extends AppCompatActivity {
                 startActivity(new Intent(Main2Activity.this, Main3Activity.class));
             }
 
+        });
+        location.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(Main2Activity.this, MapsActivity.class));
+            }
         });
 
     }

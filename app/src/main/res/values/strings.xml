@@ -12,4 +12,6 @@
     <string name="volcanic_erruption">Volcanic Erruption</string>
     <string name="youtube_tutorial">Youtube Tutorial</string>
     <string name="play_video">Play Video</string>
+    <string name="location">Location</string>
+    <string name="title_activity_maps">Map</string>
 </resources>
