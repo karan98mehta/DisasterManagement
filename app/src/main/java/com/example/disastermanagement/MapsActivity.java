@@ -1,8 +1,15 @@
 package com.example.disastermanagement;
 
 import android.Manifest;
+import android.annotation.TargetApi;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Address;
 import android.location.Criteria;
 import android.location.Geocoder;
@@ -14,8 +21,13 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.widget.Toast;
 
+import com.firebase.geofire.GeoFire;
+import com.firebase.geofire.GeoLocation;
+import com.firebase.geofire.GeoQuery;
+import com.firebase.geofire.GeoQueryEventListener;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -26,13 +38,19 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
@@ -43,6 +61,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Marker mCurrLocationMarker;
     LocationRequest mLocationRequest;
     private GoogleMap mMap;
+
+    DatabaseReference ref;
+    GeoFire geoFire;
+    Marker mCurrent;
 
 
     @Override
@@ -57,6 +79,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 getSupportFragmentManager()
                         .findFragmentById(R.id.map);
 
+        ref = FirebaseDatabase.getInstance().getReference("MyLocation");
+        geoFire = new GeoFire(ref);
+
+        assert mapFragment != null;
         mapFragment.getMapAsync(this);
     }
     @Override
@@ -78,7 +104,56 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             buildGoogleApiClient();
             mMap.setMyLocationEnabled(true);
         }
+        LatLng dangerous_area = new LatLng(23.399297, 85.388252);
+        mMap.addCircle(new CircleOptions().center(dangerous_area).radius(50000).strokeColor(Color.BLUE).fillColor(0x220000ff).strokeWidth(5.0f));
+
+        GeoQuery geoQuery = geoFire.queryAtLocation(new GeoLocation(dangerous_area.latitude,dangerous_area.longitude),50f);
+        geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
+            @Override
+            public void onKeyEntered(String key, GeoLocation location) {
+                sendNotification("ENTERED",String.format("%s entered the dangerous area",key));
+            }
+
+            @Override
+            public void onKeyExited(String key) {
+                sendNotification("EXITED",String.format("%s is no longer in the dangerous area",key));
+            }
+
+            @Override
+            public void onKeyMoved(String key, GeoLocation location) {
+                Log.d("Move",String.format("%s is within the dangerous area[%f/%f]",key,location.latitude,location.longitude));
+            }
+
+            @Override
+            public void onGeoQueryReady() {
+
+            }
+
+            @Override
+            public void onGeoQueryError(DatabaseError error) {
+                Log.e("Error",""+error);
+            }
+        });
+
     }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private void sendNotification(String title, String content) {
+
+        Notification.Builder builder = new Notification.Builder(this).setSmallIcon(R.mipmap.ic_launcher_round).setContentTitle(title).setContentText(content);
+        NotificationManager manager = (NotificationManager)this.getSystemService(Context.NOTIFICATION_SERVICE);
+        //manager.createNotificationChannel(notificationChannel);
+        Intent intent = new Intent(this,MapsActivity.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(this,0,intent,PendingIntent.FLAG_IMMUTABLE);
+        builder.setContentIntent(contentIntent);
+        Notification notification = builder.build();
+        notification.flags = Notification.DEFAULT_LIGHTS | Notification.FLAG_AUTO_CANCEL;
+        notification.defaults |= Notification.DEFAULT_SOUND;
+
+        manager.notify(new Random().nextInt(),notification);
+
+    }
+
     protected synchronized void buildGoogleApiClient() {
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
@@ -127,6 +202,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (null != locations && null != providerList && providerList.size() > 0) {
             double longitude = locations.getLongitude();
             double latitude = locations.getLatitude();
+
+            geoFire.setLocation("You", new GeoLocation(latitude, longitude),
+                    (key, error) -> {
+                        if(mCurrent!=null)
+                            mCurrent.remove();
+                        mCurrent = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude,longitude)).title("You"));
+                    });
             Geocoder geocoder = new Geocoder(getApplicationContext(),
                     Locale.getDefault());
             try {
