@@ -24,6 +24,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.Toast;
@@ -78,6 +79,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     GeoFire geoFire;
     Marker mCurrent;
 
+    String NOTIFICATION_CHANNEL_ID = "101";
+    String CHANNEL_ID = "100";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +94,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment)
                 getSupportFragmentManager()
                         .findFragmentById(R.id.map);
+        createNotificationChannel();
 
         ref = FirebaseDatabase.getInstance().getReference("MyLocation");
         geoFire = new GeoFire(ref);
@@ -196,7 +201,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.getUiSettings().setZoomControlsEnabled(true);
         mMap.getUiSettings().setZoomGesturesEnabled(true);
         mMap.getUiSettings().setCompassEnabled(true);
-        LatLng dangerous_area = new LatLng(23.399302, 86.385929);
+        LatLng dangerous_area = new LatLng(23.399302, 85.385929);
         mMap.addCircle(new CircleOptions().center(dangerous_area).radius(500).strokeColor(Color.BLUE).fillColor(0x220000ff).strokeWidth(5.0f));
 
         GeoQuery geoQuery = geoFire.queryAtLocation(new GeoLocation(dangerous_area.latitude, dangerous_area.longitude), 0.5f);
@@ -215,7 +220,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             @Override
             public void onKeyMoved(String key, GeoLocation location) {
-                sendNotification("EXITED", String.format("%s are within the dangerous area", key));
+                sendNotification("WITHIN", String.format("%s are within the dangerous area", key));
                 Log.d("Move", String.format("%s are within the dangerous area[%f/%f]", key, location.latitude, location.longitude));
             }
 
@@ -232,11 +237,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    private void createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.channel_name);
+            String description = getString(R.string.channel_desc);
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
 
     private void sendNotification(String title, String content) {
 
-
-        Notification.Builder builder = new Notification.Builder(this).setSmallIcon(R.mipmap.ic_launcher_round).setContentTitle(title).setContentText(content);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this,CHANNEL_ID).setSmallIcon(R.mipmap.ic_launcher_round).setContentTitle(title).setContentText(content);
         NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
         Intent intent = new Intent(this, MapsActivity.class);
         //intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -246,7 +265,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         notification.flags |= Notification.FLAG_AUTO_CANCEL;
         notification.defaults |= Notification.DEFAULT_SOUND;
 
-        notificationManager.notify(new Random().nextInt(), notification);
+        notificationManager.notify(Integer.parseInt(NOTIFICATION_CHANNEL_ID), notification);
 
     }
 
