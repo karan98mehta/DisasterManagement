@@ -1,7 +1,9 @@
 package com.example.disastermanagement;
 
 import android.Manifest;
+
 import com.google.android.gms.location.LocationServices;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Notification;
@@ -108,10 +110,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
         switch (requestCode) {
             case MY_PERMISSIONS_REQUEST_CODE: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-                {
-                    if (checkPlayServices())
-                    {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    if (checkPlayServices()) {
                         buildGoogleApiClient();
                         createLocationRequest();
                         displayLocation();
@@ -124,8 +124,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void setuplocation() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        {
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.ACCESS_FINE_LOCATION
@@ -150,11 +149,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             double longitude = mLastLocation.getLongitude();
             geoFire.setLocation("You", new GeoLocation(latitude, longitude),
                     (key, error) -> {
-                        if(mCurrent!=null)
+                        if (mCurrent != null)
                             mCurrent.remove();
-                        mCurrent = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude,longitude)).title("You"));
+                        mCurrent = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)).title("You"));
 
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude,longitude),12));
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), 12));
                     });
 
             Log.d("EDMTDEV", String.format("Your location was changed: %f / %f", latitude, longitude));
@@ -201,6 +200,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.getUiSettings().setZoomControlsEnabled(true);
         mMap.getUiSettings().setZoomGesturesEnabled(true);
         mMap.getUiSettings().setCompassEnabled(true);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        mMap.setMyLocationEnabled(true);
+
+
         LatLng dangerous_area = new LatLng(23.399302, 85.385929);
         mMap.addCircle(new CircleOptions().center(dangerous_area).radius(500).strokeColor(Color.BLUE).fillColor(0x220000ff).strokeWidth(5.0f));
 
