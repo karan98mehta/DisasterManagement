@@ -1,11 +1,6 @@
 package com.example.disastermanagement;
 
 import android.Manifest;
-
-import com.google.android.gms.location.LocationServices;
-
-import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -14,13 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.location.Address;
-import android.location.Criteria;
-import android.location.Geocoder;
 import android.location.Location;
-import android.location.LocationManager;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -41,12 +30,10 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -55,9 +42,6 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Locale;
 import java.util.Random;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
@@ -83,6 +67,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     String NOTIFICATION_CHANNEL_ID = "101";
     String CHANNEL_ID = "100";
+    String receivingdata;
+    String[] name;
 
 
     @Override
@@ -90,7 +76,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        Bundle b = getIntent().getExtras();
+        receivingdata = b.getString("Key");
+        name = receivingdata.split(":");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkLocationPermission();
         }
         SupportMapFragment mapFragment = (SupportMapFragment)
@@ -147,7 +137,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (mLastLocation != null) {
             double latitude = mLastLocation.getLatitude();
             double longitude = mLastLocation.getLongitude();
-            geoFire.setLocation("You", new GeoLocation(latitude, longitude),
+            Random rand = new Random();
+            geoFire.setLocation(name[1], new GeoLocation(latitude, longitude),
                     (key, error) -> {
                         if (mCurrent != null)
                             mCurrent.remove();
@@ -220,20 +211,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
             @Override
             public void onKeyEntered(String key, GeoLocation location) {
-                sendNotification("ENTERED", String.format("%s entered the dangerous area", key));
+                sendNotification("ENTERED", String.format("%s entered the dangerous area", key),key);
                 Log.d("Move", String.format("%s entered the dangerous area[%f/%f]", key, location.latitude, location.longitude));
             }
 
             @Override
             public void onKeyExited(String key) {
-                sendNotification("EXITED", String.format("%s are no longer in the dangerous area", key));
-                Log.d("Move", String.format("%s are no longer in the dangerous area", key));
+                sendNotification("EXITED", String.format("%s is no longer in the dangerous area", key),key);
+                Log.d("Move", String.format("%s is no longer in the dangerous area", key));
             }
 
             @Override
             public void onKeyMoved(String key, GeoLocation location) {
-                sendNotification("WITHIN", String.format("%s are within the dangerous area", key));
-                Log.d("Move", String.format("%s are within the dangerous area[%f/%f]", key, location.latitude, location.longitude));
+                sendNotification("WITHIN", String.format("%s is within the dangerous area", key),key);
+                Log.d("Move", String.format("%s is within the dangerous area[%f/%f]", key, location.latitude, location.longitude));
             }
 
             @Override
@@ -265,20 +256,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private void sendNotification(String title, String content) {
+    private void sendNotification(String title, String content, String key) {
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this,CHANNEL_ID).setSmallIcon(R.mipmap.ic_launcher_round).setContentTitle(title).setContentText(content);
-        NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-        Intent intent = new Intent(this, MapsActivity.class);
-        //intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
-        builder.setContentIntent(contentIntent);
-        Notification notification = builder.build();
-        notification.flags |= Notification.FLAG_AUTO_CANCEL;
-        notification.defaults |= Notification.DEFAULT_SOUND;
+        if(key == name[1])
+        {
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this,CHANNEL_ID).setSmallIcon(R.mipmap.ic_launcher_round).setContentTitle(title).setContentText(content);
+            NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+            Intent intent = new Intent(this, MapsActivity.class);
+            //intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+            builder.setContentIntent(contentIntent);
+            Notification notification = builder.build();
+            notification.flags |= Notification.FLAG_AUTO_CANCEL;
+            notification.defaults |= Notification.DEFAULT_SOUND;
 
-        notificationManager.notify(Integer.parseInt(NOTIFICATION_CHANNEL_ID), notification);
-
+            notificationManager.notify(Integer.parseInt(NOTIFICATION_CHANNEL_ID), notification);
+        }
     }
 
     @Override

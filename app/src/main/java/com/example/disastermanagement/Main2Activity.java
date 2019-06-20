@@ -60,7 +60,16 @@ public class Main2Activity extends AppCompatActivity {
         location.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(Main2Activity.this, MapsActivity.class));
+                String passingdata = name.getText().toString();
+                Intent i = new Intent(Main2Activity.this, MapsActivity.class);
+                Bundle b = new Bundle();
+                b.putString("Key", passingdata);
+                i.putExtras(b);
+                startActivity(i);
+                //Intent intent = new Intent(Main2Activity.this, MapsActivity.class);
+                //intent.putExtra("value2","world");
+                //startActivity(intent);
+                //startActivity(new Intent(Main2Activity.this, MapsActivity.class));
             }
         });
 
